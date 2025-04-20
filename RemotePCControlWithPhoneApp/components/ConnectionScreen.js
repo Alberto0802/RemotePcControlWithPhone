@@ -54,7 +54,6 @@ const ConnectionScreen = ({ onConnect }) => {
       [{ text: 'Entendido', style: 'default' }]
     );
   };
-  dsadasd
 
   useFocusEffect(
     useCallback(() => {
