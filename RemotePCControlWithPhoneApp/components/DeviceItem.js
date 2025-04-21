@@ -13,7 +13,7 @@ const DeviceItem = ({ device, onRename, onDelete, onConnect }) => {
 
   const handleRename = () => {
     setIsEditing(false);
-    onRename(device.id, name); // Llama a la función que actualiza el nombre
+    onRename(device.id, name);
   };
 
   const confirmDelete = () => {

@@ -1,4 +1,3 @@
-// utils/database.js
 import * as SQLite from 'expo-sqlite';
 
 const db = SQLite.openDatabaseSync('devices.db');

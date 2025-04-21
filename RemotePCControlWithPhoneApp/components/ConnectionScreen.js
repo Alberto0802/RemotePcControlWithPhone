@@ -19,7 +19,7 @@ const ConnectionScreen = ({ onConnect }) => {
 
     setConnecting(true);
     const socket = io(`http://${ip}:3000`, {
-      transports: ['websocket'], // Mejora la conexión
+      transports: ['websocket'],
       reconnection: false,
     });
 
@@ -58,9 +58,8 @@ const ConnectionScreen = ({ onConnect }) => {
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        // Al presionar atrás, volveremos a la pantalla anterior
-        onConnect(null); // Le pasamos null o false para indicar que no hubo conexión
-        return true; // Evita el comportamiento por defecto
+        onConnect(null);
+        return true; 
       };
   
       BackHandler.addEventListener('hardwareBackPress', onBackPress);

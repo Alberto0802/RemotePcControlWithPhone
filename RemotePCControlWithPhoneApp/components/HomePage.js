@@ -46,20 +46,16 @@ const HomePage = ({ onConnect, socket }) => {
       requestDevices();
     };
   
-    // Si ya está conectado, pedimos directamente
     if (socket.connected) {
       requestDevices();
     } else {
-      // Si no, esperamos al evento de conexión
       socket.on('connect', onConnect);
     }
   
-    // Escuchamos actualizaciones
     socket.on('deviceList', handleDeviceList);
     socket.on('deviceDeleted', handleDeviceChange);
     socket.on('deviceRenamed', handleDeviceChange);
   
-    // Cleanup
     return () => {
       socket.off('connect', onConnect);
       socket.off('deviceList', handleDeviceList);
@@ -84,7 +80,7 @@ const HomePage = ({ onConnect, socket }) => {
     socket.on('connect', () => {
       console.log('✅ Conectado a', ip);
       socket.emit('registerIp', ip);
-      onConnect(socket); // Ahora sí, le pasas el socket listo
+      onConnect(socket);
     });
   
     socket.on('connect_error', (err) => {
@@ -94,17 +90,16 @@ const HomePage = ({ onConnect, socket }) => {
   };  
 
   const handleDeleteDevice = (id) => {
-    // Pide confirmación antes de borrar
     Alert.alert('Confirmación', '¿Estás seguro de que quieres eliminar este dispositivo?', [
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Eliminar', onPress: () => {
-        socket.emit('deleteDevice', id);  // Emitimos el evento de eliminar al servidor
+        socket.emit('deleteDevice', id); 
       }},
     ]);
   };
 
   const handleRenameDevice = (id, newName) => {
-    socket.emit('renameDevice', { id, newName });  // Emitimos el evento de renombrar al servidor
+    socket.emit('renameDevice', { id, newName });  
   };
   
 

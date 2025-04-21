@@ -19,7 +19,6 @@ export default function App() {
   }, []);
 
   const handleConnect = async (socketOrIp) => {
-    // Si se pasa el socket directamente (desde ConnectionScreen)
     if (typeof socketOrIp === 'object' && socketOrIp.connected) {
       const socket = socketOrIp;
       const ip = socket.io.uri.replace(/^http:\/\/|:3000$/g, '');
@@ -27,7 +26,6 @@ export default function App() {
       return;
     }
 
-    // Si se pasa una IP directamente (desde Homepage)
     const ip = socketOrIp;
     const io = require('socket.io-client');
     const newSocket = io(`http://${ip}:3000`, {
@@ -54,7 +52,6 @@ export default function App() {
         >
           {() => <ConnectionScreen onConnect={handleConnect} />}
         </Stack.Screen>
-        {/* Aquí puedes agregar más pantallas usando el socket */}
       </Stack.Navigator>
     </NavigationContainer>
   );

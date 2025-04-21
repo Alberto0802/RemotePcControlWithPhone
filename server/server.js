@@ -15,7 +15,6 @@ const io = new Server(server, {
   }
 });
 
-// Base de datos SQLite
 const db = new sqlite3.Database('./devices.db', (err) => {
   if (err) {
     console.error('Error al abrir la base de datos:', err);
@@ -34,7 +33,6 @@ io.on('connection', (socket) => {
   const clientIp = socket.handshake.address;
   console.log(`📲 Dispositivo conectado desde: ${clientIp}`);
 
-  // Comprobamos cuántos dispositivos tiene este IP
   socket.on('registerIp', ({ ip, name }) => {
     if (!ip || !name) return console.warn('❗ IP o name no recibidos');
 
@@ -71,13 +69,12 @@ io.on('connection', (socket) => {
     });
   });
 
-  // Eliminar dispositivo
   socket.on('deleteDevice', (id) => {
     db.run('DELETE FROM devices WHERE id = ?', [id], (err) => {
       if (err) console.error('Error eliminando dispositivo:', err);
       else {
         console.log(`🗑️ Dispositivo ${id} eliminado`);
-        io.emit('deviceDeleted', id);  // Emitimos el evento para actualizar la lista en los clientes
+        io.emit('deviceDeleted', id);
       }
     });
   });
