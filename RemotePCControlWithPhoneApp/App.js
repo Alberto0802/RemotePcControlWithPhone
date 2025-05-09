@@ -3,8 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomePage from './components/HomePage';
 import ConnectionScreen from './components/ConnectionScreen';
-import { insertDevice } from './utils/database';
-import { initDB } from './utils/database';
+import { init } from './utils/database';
 import { Alert } from 'react-native';
 
 const Stack = createNativeStackNavigator();
@@ -13,9 +12,13 @@ export default function App() {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    initDB()
-      .then(() => console.log("Base de datos inicializada"))
-      .catch((err) => console.log("Error iniciando la DB:", err));
+    init()
+      .then(() => {
+        console.log('Database initialized!');
+      })
+      .catch((err) => {
+        console.log('Database failed to initialize', err);
+      });
   }, []);
 
   const handleConnect = async (socketOrIp) => {

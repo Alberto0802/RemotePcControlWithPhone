@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react-native';
-import { fetchDevices } from '../utils/database';
+import { fetchServers, updateServer, deleteServer } from '../utils/database';
 import ConnectionScreen from './ConnectionScreen';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
@@ -8,115 +8,69 @@ import { io } from 'socket.io-client';
 import DeviceItem from './DeviceItem';
 
 const HomePage = ({ onConnect, socket }) => {
-  const [devices, setDevices] = useState([]);
+  const [servers, setServers] = useState([]);
   const [showConnectionScreen, setShowConnectionScreen] = useState(false);
-
-  const refreshDevices = () => {
-    if (socket) {
-      socket.emit('getDevices');
-    }
-  };
 
   useFocusEffect(
     useCallback(() => {
-      refreshDevices();
-    }, [])
+  
+      // Cargar servidores desde SQLite
+      const loadServers = async () => {
+        try {
+          const loadedServers = await fetchServers();
+          setServers(loadedServers);
+        } catch (err) {
+          console.log('Error al cargar servidores:', err);
+        }
+      };
+  
+      loadServers();
+    }, [socket])
   );
-
-  useEffect(() => {
-    if (!socket) return;
-  
-    const requestDevices = () => {
-      console.log('📡 Emitiendo getDevices');
-      socket.emit('getDevices');
-    };
-  
-    const onConnect = () => {
-      console.log('✅ Socket conectado, pidiendo dispositivos');
-      requestDevices();
-    };
-  
-    const handleDeviceList = (data) => {
-      console.log('📥 Lista de dispositivos recibida:', data);
-      setDevices(data);
-    };
-  
-    const handleDeviceChange = () => {
-      console.log('🔁 Dispositivo cambiado, refrescando');
-      requestDevices();
-    };
-  
-    if (socket.connected) {
-      requestDevices();
-    } else {
-      socket.on('connect', onConnect);
-    }
-  
-    socket.on('deviceList', handleDeviceList);
-    socket.on('deviceDeleted', handleDeviceChange);
-    socket.on('deviceRenamed', handleDeviceChange);
-  
-    return () => {
-      socket.off('connect', onConnect);
-      socket.off('deviceList', handleDeviceList);
-      socket.off('deviceDeleted', handleDeviceChange);
-      socket.off('deviceRenamed', handleDeviceChange);
-    };
-  }, [socket]);
-  
-  
-
-  const handleConnect = (ip) => {
-    if (!ip) {
-      Alert.alert('IP inválida');
-      return;
-    }
-
-    const socket = io(`http://${ip}:3000`, {
-      transports: ['websocket'],
-      reconnection: false,
-    });
-  
-    socket.on('connect', () => {
-      console.log('✅ Conectado a', ip);
-      socket.emit('registerIp', ip);
-      onConnect(socket);
-    });
-  
-    socket.on('connect_error', (err) => {
-      console.log('❌ Error de conexión:', err.message);
-      Alert.alert('Error', 'No se pudo conectar al servidor.');
-    });
-  };  
-
-  const handleDeleteDevice = (id) => {
-    Alert.alert('Confirmación', '¿Estás seguro de que quieres eliminar este dispositivo?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Eliminar', onPress: () => {
-        socket.emit('deleteDevice', id); 
-      }},
-    ]);
-  };
-
-  const handleRenameDevice = (id, newName) => {
-    socket.emit('renameDevice', { id, newName });  
-  };
-  
 
   if (showConnectionScreen) {
     return <ConnectionScreen onConnect={(socketOrNull) => {
-        setShowConnectionScreen(false);
-        if (socketOrNull) {
-          fetchDevices();
-          onConnect(socketOrNull);
-        }
-      }} />
+      setShowConnectionScreen(false);
+      if (socketOrNull) {
+        onConnect(socketOrNull);
+      }
+      (async () => {
+        const loadedServers = await fetchServers();
+        setServers(loadedServers);
+      })();
+    }} />
   }
-  console.log('🔌 socket:', socket?.ip);
-console.log(devices);
+  
+  const handleConnect = () => {
+      return console.log("Sin programar");
+    }
+
+  const handleRenameServer = async (id, newName) => {
+      try {
+        await updateServer(id, newName);
+        const updatedServers = await fetchServers();
+        setServers(updatedServers);
+      } catch (err) {
+        console.log("Error al renombrar servidor:", err);
+        Alert.alert("Error", "No se pudo renombrar el dispositivo.");
+      }
+    };
+    
+  const handleDeleteServer = async (id) => {
+      try {
+        await deleteServer(id);
+        const updatedServers = await fetchServers();
+        setServers(updatedServers);
+      } catch (err) {
+        console.log("Error al eliminar servidor:", err);
+        Alert.alert("Error", "No se pudo eliminar el dispositivo.");
+      }
+    };
+
+console.log(servers);
   return (
     <View style={styles.container}>
-      {devices.length === 0 ? (
+      {servers.length === 0 ? (
         <TouchableOpacity onPress={() => setShowConnectionScreen(true)}>
           <Image source={require('../assets/homepageImage.png')} style={styles.image} />
           <Text style={styles.imageText}>No tienes ningún dispositivo guardado</Text>
@@ -124,22 +78,22 @@ console.log(devices);
       ) : (
         <>
           <Text style={styles.title}>Tus dispositivos guardados</Text>
-          <Text style={styles.numberOfDevices}>( {devices.length} / 5 )</Text>
+          <Text style={styles.numberOfDevices}>( {servers.length} / 5 )</Text>
           <FlatList
-            data={devices}
+            data={servers}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
               <DeviceItem
                 device={item}
-                onRename={(id, newName) => handleRenameDevice(id, newName)}
-                onDelete={() => handleDeleteDevice(item.id)}
+                onRename={(id, newName) => handleRenameServer(id, newName)}
+                onDelete={() => handleDeleteServer(item.id)}
                 onConnect={(ip) => handleConnect(ip)}
               />
             )}
           />
 
-          <TouchableOpacity style={styles.addNewButton} disabled={devices.length >=5} onPress={() => setShowConnectionScreen(true)}>
-          <Text style={[styles.addNewText, devices.length >= 5 && styles.disabledText]}>+ Añadir nuevo dispositivo</Text>
+          <TouchableOpacity style={styles.addNewButton} disabled={servers.length >=5} onPress={() => setShowConnectionScreen(true)}>
+          <Text style={[styles.addNewText, servers.length >= 5 && styles.disabledText]}>+ Añadir nuevo dispositivo</Text>
           </TouchableOpacity>
         </>
       )}

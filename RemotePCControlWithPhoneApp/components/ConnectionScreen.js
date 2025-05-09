@@ -5,6 +5,7 @@ import { BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
+import { insertServer } from '../utils/database';
 
 const ConnectionScreen = ({ onConnect }) => {
   const [ip, setIp] = useState('');
@@ -26,7 +27,7 @@ const ConnectionScreen = ({ onConnect }) => {
     socket.on('connect', () => {
         console.log('✅ Conectado al servidor');
         console.log(`ℹ️ Enviando -> IP: ${ip}, Name: ${name}`);
-        socket.emit('registerIp', { ip, name });
+        addServer();
         onConnect(socket)
     });
 
@@ -34,6 +35,15 @@ const ConnectionScreen = ({ onConnect }) => {
       setConnecting(false);
       Alert.alert('Error', 'No se pudo conectar al servidor.');
     });
+  };
+
+  const addServer = async () => {
+    try {
+      await insertServer(name, ip);
+      console.log('Servidor agregado');
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   const showInfoAlert = () => {
