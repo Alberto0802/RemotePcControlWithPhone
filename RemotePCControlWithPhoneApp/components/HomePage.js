@@ -2,14 +2,18 @@ import React, { useEffect, useState, useContext } from 'react';
 import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react-native';
 import { fetchServers, updateServer, deleteServer } from '../utils/database';
 import ConnectionScreen from './ConnectionScreen';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useCallback } from 'react';
 import { io } from 'socket.io-client';
 import DeviceItem from './DeviceItem';
+import { SocketContext } from './SocketContext';
 
-const HomePage = ({ onConnect, socket }) => {
+const HomePage = ({ onConnect }) => {
   const [servers, setServers] = useState([]);
   const [showConnectionScreen, setShowConnectionScreen] = useState(false);
+  const { setSocket } = useContext(SocketContext);
+  const { socket }= useContext(SocketContext);
+  const navigation = useNavigation();
 
   useFocusEffect(
     useCallback(() => {
@@ -41,9 +45,42 @@ const HomePage = ({ onConnect, socket }) => {
     }} />
   }
   
-  const handleConnect = () => {
-      return console.log("Sin programar");
-    }
+const handleConnect = async (ip) => {
+  try {
+    const newSocket = io(`http://${ip}:3000`, {
+      transports: ['websocket'],
+      timeout: 10000,
+      forceNew: true
+    });
+
+    // Espera conexión con timeout
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Timeout de conexión'));
+      }, 10000);
+
+      newSocket.on('connect', () => {
+        clearTimeout(timeout);
+        setSocket(newSocket);
+        navigation.navigate('Remote');
+        resolve();
+      });
+
+      newSocket.on('connect_error', (err) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
+    });
+
+  } catch (err) {
+    Alert.alert('Error de conexión', 
+      `No se pudo conectar al servidor:\n${err.message}\n\nVerifica que:
+      - La IP sea correcta
+      - El servidor esté ejecutándose
+      - Ambos dispositivos estén en la misma red`);
+    console.error('Error de conexión:', err);
+  }
+};
 
   const handleRenameServer = async (id, newName) => {
       try {
@@ -67,7 +104,6 @@ const HomePage = ({ onConnect, socket }) => {
       }
     };
 
-console.log(servers);
   return (
     <View style={styles.container}>
       {servers.length === 0 ? (

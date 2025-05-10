@@ -65,20 +65,22 @@ const ConnectionScreen = ({ onConnect }) => {
     );
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      const onBackPress = () => {
-        onConnect(null);
-        return true; 
-      };
-  
-      BackHandler.addEventListener('hardwareBackPress', onBackPress);
-  
-      return () => {
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-      };
-    }, [])
-  );
+useFocusEffect(
+  useCallback(() => {
+    const onBackPress = () => {
+      onConnect(null);
+      return true;
+    };
+
+    // Agregar el listener
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+    // Retornar la función de limpieza
+    return () => {
+      backHandler.remove(); // Elimina el evento correctamente
+    };
+  }, [])
+);
   
 
   return (
