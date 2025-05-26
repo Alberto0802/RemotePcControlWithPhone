@@ -55,7 +55,12 @@ const RemoteScreen = () => {
       // Actualiza sólo si la imagen es más nueva que la actual
       if (data.timestamp > lastTimestamp.current) {
         lastTimestamp.current = data.timestamp;
-        setImageData(`data:image/jpeg;base64,${data.image}`);
+        const newImageData = `data:image/jpeg;base64,${data.image}`;
+        if (showingImage1) {
+          setImage2Data(newImageData);
+        } else {
+          setImage1Data(newImageData);
+        }
         setLoading(false);
       }
     };
@@ -67,7 +72,7 @@ const RemoteScreen = () => {
       socket.off('screen-data', handleScreenData);
       socket.emit('stop-stream');
     };
-  }, [socket]);
+  }, [socket, showingImage1]);
 
   const onImageLoad = () => {
     // Cuando la nueva imagen termina de cargar, hacemos la transición
@@ -75,13 +80,13 @@ const RemoteScreen = () => {
 
     if (showingImage1) {
       Animated.parallel([
-        Animated.timing(image1Opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-        Animated.timing(image2Opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.timing(image1Opacity, { toValue: 0, duration: 0, useNativeDriver: true }),
+        Animated.timing(image2Opacity, { toValue: 1, duration: 0, useNativeDriver: true }),
       ]).start(() => setShowingImage1(false));
     } else {
       Animated.parallel([
-        Animated.timing(image1Opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.timing(image2Opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(image1Opacity, { toValue: 1, duration: 0, useNativeDriver: true }),
+        Animated.timing(image2Opacity, { toValue: 0, duration: 0, useNativeDriver: true }),
       ]).start(() => setShowingImage1(true));
     }
   };
@@ -163,15 +168,31 @@ const RemoteScreen = () => {
         </View>
       )}
 
-      {imageData && (
-        <Image
-          source={{ uri: imageData }}
-          style={styles.image}
-          resizeMode="contain"
-          fadeDuration={0} // sin fade
-          onError={(e) => console.log('Error cargando imagen:', e.nativeEvent.error)}
-        />
-      )}
+      <Animated.View style={[styles.imageContainer, { opacity: image1Opacity }]}>
+        {image1Data && (
+          <Image
+            source={{ uri: image1Data }}
+            style={styles.image}
+            resizeMode="contain"
+            fadeDuration={0}
+            onLoad={onImageLoad}
+            onError={(e) => console.log('Error cargando imagen 1:', e.nativeEvent.error)}
+          />
+        )}
+      </Animated.View>
+
+      <Animated.View style={[styles.imageContainer, { opacity: image2Opacity }]}>
+        {image2Data && (
+          <Image
+            source={{ uri: image2Data }}
+            style={styles.image}
+            resizeMode="contain"
+            fadeDuration={0}
+            onLoad={onImageLoad}
+            onError={(e) => console.log('Error cargando imagen 2:', e.nativeEvent.error)}
+          />
+        )}
+      </Animated.View>
       <View style={styles.joystickContainer} {...panResponder.panHandlers}>
         <Animated.View style={[styles.joystickKnob, joystickPosition.getLayout()]} />
       </View>
@@ -218,6 +239,7 @@ const RemoteScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
+  imageContainer: { ...StyleSheet.absoluteFillObject },
   image: { flex: 1, width: '100%', height: '100%', backgroundColor: 'black' },
   loading: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
   text: { color: '#fff', marginTop: 10 },
