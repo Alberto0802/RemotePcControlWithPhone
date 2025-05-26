@@ -8,7 +8,7 @@ const fs = require('fs');
 
 const app = express();
 app.use(cors());
-const FRAME_INTERVAL = 1;
+const FRAME_INTERVAL = 100;
 const JPEG_QUALITY = 70;
 const MAX_WIDTH = 1280;
 const cursorImage = fs.readFileSync('./assets/cursor.png');
