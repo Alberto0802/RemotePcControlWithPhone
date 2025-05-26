@@ -92,11 +92,7 @@ const captureAndEmit = async (socket) => {
       socket.volatile.emit('screen-data', { 
         image: resized.toString('base64'), 
         timestamp: now,
-        fps: currentFps
       });
-      lastFrameTime = now;
-      frameCount++;
-      updateFps();
     }
   } catch (err) {
     console.error('Error en captura:', err);
