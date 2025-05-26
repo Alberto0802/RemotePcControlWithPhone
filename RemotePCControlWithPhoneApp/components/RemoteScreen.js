@@ -8,23 +8,21 @@ import {
   TouchableOpacity,
   PanResponder,
   Animated,
-  TextInput
+  TextInput,
+  StatusBar
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SocketContext } from './SocketContext';
 import * as ScreenOrientation from 'expo-screen-orientation';
 
-const FRAME_INTERVAL = 16; // ~30fps
-const JPEG_QUALITY = 70;   // mejor calidad
-
 const RemoteScreen = () => {
   const { socket } = useContext(SocketContext);
-  const [imageData, setImageData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [inputKey, setInputKey] = useState(0);
   const inputRef = useRef(null);
   const lastTimestamp = useRef(0);
   const waitingForImageLoad = useRef(false);
+  const imageQueue = useRef([]);
+  const processingQueue = useRef(false);
 
   const JOYSTICK_RADIUS = 50;
   const SENSITIVITY = 0.7;
@@ -40,27 +38,49 @@ const RemoteScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
+      StatusBar.setHidden(true);
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+      
       return () => {
+        StatusBar.setHidden(false);
         ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
       };
     }, [])
   );
 
+  const processImageQueue = useCallback(async () => {
+    if (processingQueue.current || imageQueue.current.length === 0) return;
+    
+    processingQueue.current = true;
+    const newImageData = imageQueue.current.shift();
+    
+    if (showingImage1) {
+      setImage2Data(newImageData);
+    } else {
+      setImage1Data(newImageData);
+    }
+    
+    processingQueue.current = false;
+    
+    if (imageQueue.current.length > 0) {
+      requestAnimationFrame(processImageQueue);
+    }
+  }, [showingImage1]);
 
   useEffect(() => {
     if (!socket) return;
 
     const handleScreenData = (data) => {
-      // Actualiza sólo si la imagen es más nueva que la actual
       if (data.timestamp > lastTimestamp.current) {
         lastTimestamp.current = data.timestamp;
         const newImageData = `data:image/jpeg;base64,${data.image}`;
-        if (showingImage1) {
-          setImage2Data(newImageData);
-        } else {
-          setImage1Data(newImageData);
+        
+        imageQueue.current.push(newImageData);
+        
+        if (!processingQueue.current) {
+          requestAnimationFrame(processImageQueue);
         }
+        
         setLoading(false);
       }
     };
@@ -72,25 +92,39 @@ const RemoteScreen = () => {
       socket.off('screen-data', handleScreenData);
       socket.emit('stop-stream');
     };
-  }, [socket, showingImage1]);
+  }, [socket, processImageQueue]);
 
   const onImageLoad = () => {
-    // Cuando la nueva imagen termina de cargar, hacemos la transición
     waitingForImageLoad.current = false;
 
     if (showingImage1) {
       Animated.parallel([
-        Animated.timing(image1Opacity, { toValue: 0, duration: 0, useNativeDriver: true }),
-        Animated.timing(image2Opacity, { toValue: 1, duration: 0, useNativeDriver: true }),
+        Animated.timing(image1Opacity, { 
+          toValue: 0, 
+          duration: 0, 
+          useNativeDriver: true 
+        }),
+        Animated.timing(image2Opacity, { 
+          toValue: 1, 
+          duration: 0, 
+          useNativeDriver: true 
+        }),
       ]).start(() => setShowingImage1(false));
     } else {
       Animated.parallel([
-        Animated.timing(image1Opacity, { toValue: 1, duration: 0, useNativeDriver: true }),
-        Animated.timing(image2Opacity, { toValue: 0, duration: 0, useNativeDriver: true }),
+        Animated.timing(image1Opacity, { 
+          toValue: 1, 
+          duration: 0, 
+          useNativeDriver: true 
+        }),
+        Animated.timing(image2Opacity, { 
+          toValue: 0, 
+          duration: 0, 
+          useNativeDriver: true 
+        }),
       ]).start(() => setShowingImage1(true));
     }
   };
-
 
   const startSendingMouseMovements = () => {
     if (movementInterval.current) return;
@@ -160,7 +194,8 @@ const RemoteScreen = () => {
   };
 
   return (
-     <View style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar hidden />
       {loading && (
         <View style={styles.loading}>
           <ActivityIndicator size="large" color="#00ff00" />
@@ -197,7 +232,6 @@ const RemoteScreen = () => {
         <Animated.View style={[styles.joystickKnob, joystickPosition.getLayout()]} />
       </View>
           <View style={styles.buttonsWrapper}>
-            {/* Fila 1: Tec + Enter */}
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 onPress={() => inputRef.current?.focus()}
@@ -213,7 +247,6 @@ const RemoteScreen = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Fila 2: Izq + Der */}
             <View style={styles.buttonRow}>
               <TouchableOpacity onPress={() => handleClick('left')} style={styles.button}>
                 <Text style={styles.buttonText}>🖱️ Izq</Text>
@@ -223,7 +256,6 @@ const RemoteScreen = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Hidden input para el teclado */}
             <TextInput
               ref={inputRef}
               style={styles.hiddenInput}
@@ -238,7 +270,15 @@ const RemoteScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#000',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0
+  },
   imageContainer: { ...StyleSheet.absoluteFillObject },
   image: { flex: 1, width: '100%', height: '100%', backgroundColor: 'black' },
   loading: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },

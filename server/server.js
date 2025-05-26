@@ -8,48 +8,26 @@ const fs = require('fs');
 
 const app = express();
 app.use(cors());
-const FRAME_INTERVAL = 33; // ~30fps (1000ms/30)
-const JPEG_QUALITY = 30;   // Reducida para mejor rendimiento
-const MAX_WIDTH = 1280;    // Reducido para mejor rendimiento
+const FRAME_INTERVAL = 1;
+const JPEG_QUALITY = 70;
+const MAX_WIDTH = 1280;
 const cursorImage = fs.readFileSync('./assets/cursor.png');
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: '*', methods: ['GET', 'POST'] }
 });
 
-// Variables para monitoreo de FPS
-let frameCount = 0;
-let lastFpsUpdate = Date.now();
-let currentFps = 0;
-
-// Función para actualizar y mostrar FPS
-const updateFps = () => {
-  const now = Date.now();
-  const elapsed = now - lastFpsUpdate;
-  
-  if (elapsed >= 1000) {
-    currentFps = Math.round((frameCount * 1000) / elapsed);
-    console.log(`FPS actual: ${currentFps}`);
-    frameCount = 0;
-    lastFpsUpdate = now;
-  }
-};
-
-// Variables para evitar procesamiento concurrente
 let processing = false;
 let lastFrameTime = 0;
 const MIN_FRAME_TIME = 1000 / 30;
 
-// Cache para la imagen del cursor
 const cursorSharp = sharp(cursorImage);
 let cursorResized = null;
 
-// Función para capturar pantalla con robotjs
 const captureScreen = () => {
   const screenSize = robot.getScreenSize();
   const img = robot.screen.capture(0, 0, screenSize.width, screenSize.height);
   
-  // Convertir el buffer de robotjs a un formato que sharp pueda procesar
   const buffer = Buffer.alloc(screenSize.width * screenSize.height * 4);
   let pos = 0;
   
