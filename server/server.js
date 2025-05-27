@@ -49,19 +49,16 @@
 
   const captureAndEmit = async (socket) => {
     if (processing) return;
-    
-    const now = Date.now();
-    if (now - lastFrameTime < FRAME_INTERVAL) return;
-    lastFrameTime = now;
-    
+  
     processing = true;
     try {
+      const now = Date.now();
       const mouse = robot.getMousePos();
       const { buffer, width, height } = captureScreen();
-      
+  
       const scale = MAX_WIDTH / width;
       const newHeight = Math.round(height * scale);
-
+  
       const resized = await sharp(buffer, {
         raw: {
           width: width,
@@ -87,7 +84,7 @@
           mozjpeg: true
         })
         .toBuffer();
-
+  
       if (socket.connected) {
         socket.volatile.emit('screen-data', { 
           image: resized.toString('base64'), 
@@ -100,6 +97,7 @@
       processing = false;
     }
   };
+  ;
 
   io.on('connection', (socket) => {
     console.log(`Cliente conectado: ${socket.id}`);
