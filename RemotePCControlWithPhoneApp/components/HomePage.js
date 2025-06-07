@@ -47,20 +47,26 @@ const HomePage = ({ onConnect }) => {
   
 const handleConnect = async (ip) => {
   try {
+    console.log(`Intentando conectar a http://${ip}:3000`);
     const newSocket = io(`http://${ip}:3000`, {
       transports: ['websocket'],
       timeout: 10000,
-      forceNew: true
+      forceNew: true,
+      reconnection: true,
+      reconnectionAttempts: 3,
+      reconnectionDelay: 1000
     });
 
     // Espera conexión con timeout
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error('Timeout de conexión'));
+        newSocket.close();
+        reject(new Error('Tiempo de espera agotado'));
       }, 10000);
 
       newSocket.on('connect', () => {
         clearTimeout(timeout);
+        console.log('Conexión exitosa');
         setSocket(newSocket);
         navigation.navigate('Remote');
         resolve();
@@ -68,17 +74,21 @@ const handleConnect = async (ip) => {
 
       newSocket.on('connect_error', (err) => {
         clearTimeout(timeout);
-        reject(err);
+        console.log('Error de conexión:', err.message);
+        reject(new Error(`Error de conexión: ${err.message}`));
       });
     });
 
   } catch (err) {
+    console.error('Error detallado:', err);
     Alert.alert('Error de conexión', 
-      `No se pudo conectar al servidor:\n${err.message}\n\nVerifica que:
-      - La IP sea correcta
-      - El servidor esté ejecutándose
-      - Ambos dispositivos estén en la misma red`);
-    console.error('Error de conexión:', err);
+      `No se pudo conectar al servidor:\n${err.message}\n\nVerifica que:\n` +
+      '- La IP sea correcta\n' +
+      '- El servidor esté ejecutándose\n' +
+      '- Ambos dispositivos estén en la misma red\n' +
+      '- No haya un firewall bloqueando la conexión\n' +
+      '- El puerto 3000 esté abierto en el servidor'
+    );
   }
 };
 

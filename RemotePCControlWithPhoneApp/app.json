@@ -19,6 +19,14 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "package": "com.albertojohn8.RemotePCControlWithPhoneApp",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
+      "config": {
+        "usesCleartextTraffic": true
       }
     },
     "web": {
@@ -26,6 +34,11 @@
     },
     "plugins": [
       "expo-sqlite"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "30024610-5efa-47b5-88e0-2079e89e4f28"
+      }
+    }
   }
 }

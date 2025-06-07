@@ -14,7 +14,11 @@
   const cursorImage = fs.readFileSync('./assets/cursor.png');
   const server = http.createServer(app);
   const io = new Server(server, {
-    cors: { origin: '*', methods: ['GET', 'POST'] }
+    cors: { 
+      origin: '*', 
+      methods: ['GET', 'POST'],
+      transports: ['websocket']
+    }
   });
 
   let processing = false;
@@ -133,4 +137,7 @@
     });
   });
 
-  server.listen(3000, '0.0.0.0', () => console.log('Servidor corriendo en puerto 3000'));
+  const PORT = 3000;
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor escuchando en 0.0.0.0:${PORT}`);
+  });

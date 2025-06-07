@@ -21,7 +21,11 @@ const ConnectionScreen = ({ onConnect }) => {
     setConnecting(true);
     const socket = io(`http://${ip}:3000`, {
       transports: ['websocket'],
-      reconnection: false,
+      timeout: 10000,
+      forceNew: true,
+      reconnection: true,
+      reconnectionAttempts: 3,
+      reconnectionDelay: 1000
     });
 
     socket.on('connect', () => {
